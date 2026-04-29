@@ -24,7 +24,7 @@ export default function NavBar() {
         {nav.map(({ href, label, icon }) => {
           const active = pathname === href;
           return (
-            <Link key={href} href={href} className={`flex-1 flex flex-col items-center justify-center py-3 transition-colors ${active ? 'text-white' : 'text-blue-500 hover:text-blue-300'}`}>
+            <Link key={href} href={href} className={`flex-1 flex flex-col items-center justify-center pt-3 pb-4 transition-colors ${active ? 'text-white' : 'text-blue-500 hover:text-blue-300'}`}>
               <span className={active ? 'text-white' : 'text-blue-500'}>{icons[icon]}</span>
               <span className={`text-xs mt-1 font-bold ${active ? 'text-[#CE1141]' : ''}`}>{label}</span>
               {active && <span className="w-1 h-1 bg-[#CE1141] rounded-full mt-0.5"/>}

@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 
@@ -77,20 +77,19 @@ export default function Today() {
   const broadcast = getBroadcast(game);
 
   return (
-    <div className="min-h-screen bg-[#0C2340] px-4 py-10">
+    <div className="min-h-[calc(100dvh-6rem)] bg-[#0C2340] px-4 py-8">
       <div className="max-w-md mx-auto space-y-4">
         <div className="text-center">
-          <h1 className="text-white text-3xl font-black tracking-tight">⚾ Chop Talk</h1>
+          <h1 className="text-white text-3xl font-black tracking-tight">Chop Talk</h1>
           <p className="text-blue-300 text-sm mt-1">{new Date().toLocaleDateString('en-US', { timeZone: 'America/New_York', weekday: 'long', month: 'long', day: 'numeric' })}</p>
         </div>
 
         {!game ? (
           <div className="bg-[#13274F] rounded-2xl p-6 border border-blue-900 text-center">
-            <p className="text-4xl mb-3">??</p>
             <p className="text-white font-bold text-lg">No game today</p>
-            <p className="text-blue-400 text-sm mt-1">Enjoy the off day � the Braves will be back soon.</p>
+            <p className="text-blue-400 text-sm mt-1">Enjoy the off day · the Braves will be back soon.</p>
             <button onClick={() => askAbout('When is the next Braves game?')} className="mt-4 bg-[#CE1141] text-white text-sm font-bold px-5 py-2 rounded-xl hover:bg-red-700 transition-colors">
-              When is the next game? ?
+              When is the next game?
             </button>
           </div>
         ) : (
@@ -128,7 +127,7 @@ export default function Today() {
                 </div>
               )}
               <div className="mt-4 pt-4 border-t border-blue-900">
-                <p className="text-blue-400 text-xs">{opponent.team.name} � {isHome ? 'Truist Park' : 'Away'}</p>
+                <p className="text-blue-400 text-xs">{opponent.team.name} · {isHome ? 'Truist Park' : 'Away'}</p>
               </div>
             </div>
           </div>
@@ -155,13 +154,21 @@ export default function Today() {
         {standings && (
           <div className="bg-[#13274F] rounded-2xl p-4 border border-blue-900">
             <p className="text-blue-400 text-xs uppercase tracking-widest mb-3">NL East Standings</p>
+            <div className="flex text-blue-500 text-xs uppercase tracking-widest mb-2 px-1">
+              <span className="w-6"></span>
+              <span className="flex-1">Team</span>
+              <span className="w-16 text-center">W-L</span>
+              <span className="w-16 text-center">PCT</span>
+              <span className="w-12 text-center">GB</span>
+            </div>
             <div className="space-y-2">
               {standings.map((t, i) => (
-                <div key={i} className={"flex items-center justify-between py-1 " + (t.team.id === BRAVES_ID ? "text-white font-bold" : "text-blue-300")}>
-                  <span className="text-xs w-5">{i + 1}</span>
+                <div key={i} className={"flex items-center py-1.5 px-1 rounded-lg " + (t.team.id === BRAVES_ID ? "bg-[#CE1141] bg-opacity-20 text-white font-bold" : "text-blue-300")}>
+                  <span className="text-xs w-6">{i + 1}</span>
                   <span className="flex-1 text-sm">{t.team.name}</span>
-                  <span className="text-xs w-12 text-right">{t.wins}-{t.losses}</span>
-                  <span className="text-xs w-10 text-right text-blue-400">{i === 0 ? "�" : (t.gamesBack === "0" ? "�" : t.gamesBack + " GB")}</span>
+                  <span className="text-xs w-16 text-center">{t.wins}-{t.losses}</span>
+                  <span className="text-xs w-16 text-center">{t.winningPercentage || '---'}</span>
+                  <span className="text-xs w-12 text-center text-blue-400">{i === 0 ? "--" : (t.gamesBack === "0" ? "--" : t.gamesBack)}</span>
                 </div>
               ))}
             </div>

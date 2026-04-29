@@ -9,9 +9,9 @@ export const metadata = { title: "Chop Talk", description: "Your Atlanta Braves 
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="en">
-      <body className={`${geistSans.variable} ${geistMono.variable} bg-[#0C2340] min-h-screen flex flex-col text-base`}>
-        <main className="flex-1 pb-20">
+    <html lang="en" suppressHydrationWarning>
+      <body suppressHydrationWarning className={`${geistSans.variable} ${geistMono.variable} bg-[#0C2340] min-h-dvh flex flex-col text-base`}>
+        <main className="flex-1 pb-24">
           {children}
         </main>
         <NavBar />
