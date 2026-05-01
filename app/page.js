@@ -3,30 +3,85 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 
 const BRAVES_ID = 144;
-const QUICK_QUESTIONS = [
+const FAN_LISTEN_URL = 'https://680thefan.com/listen-live/';
+const QUICK_QUESTION_POOL = [
   "Who is pitching tonight?",
-  "Where can I watch the game?",
+  "What is the biggest matchup tonight?",
   "How is the bullpen performing?",
   "Latest Braves news?",
+  "Who is hot at the plate?",
+  "What should I watch for tonight?",
+  "How do the Braves match up today?",
+  "Give me a one-minute game preview.",
+  "What is the Braves record?",
+  "Who leads the team in home runs?",
+  "How did the Braves do yesterday?",
+  "Any injury updates I should know?",
 ];
+
+function getTodayKey() {
+  return new Date().toLocaleDateString('en-CA', { timeZone: 'America/New_York' });
+}
+
+function getFreshQuestions(count = 4) {
+  const today = getTodayKey();
+  const seed = today.split('-').reduce((sum, part) => sum + Number(part), 0);
+  return [...QUICK_QUESTION_POOL]
+    .sort((a, b) => {
+      const ia = QUICK_QUESTION_POOL.indexOf(a);
+      const ib = QUICK_QUESTION_POOL.indexOf(b);
+      return Math.sin(seed * 17 + ia * 13) - Math.sin(seed * 17 + ib * 13);
+    })
+    .slice(0, count);
+}
+
+function getUsedQuestionState() {
+  try {
+    const today = getTodayKey();
+    const saved = JSON.parse(localStorage.getItem('ct_used_home_questions') || '{}');
+    return saved.date === today && Array.isArray(saved.questions) ? saved.questions : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveUsedQuestion(question) {
+  try {
+    const today = getTodayKey();
+    const used = getUsedQuestionState();
+    const next = [...new Set([...used, question])];
+    localStorage.setItem('ct_used_home_questions', JSON.stringify({ date: today, questions: next }));
+  } catch {}
+}
+
+function getAvailableQuestions(count = 4) {
+  const used = typeof window === 'undefined' ? [] : getUsedQuestionState();
+  const fresh = getFreshQuestions(QUICK_QUESTION_POOL.length);
+  const unused = fresh.filter(q => !used.includes(q));
+  return (unused.length >= count ? unused : fresh).slice(0, count);
+}
 
 export default function Today() {
   const [game, setGame] = useState(null);
+  const [lastGame, setLastGame] = useState(null);
   const [loading, setLoading] = useState(true);
   const [standings, setStandings] = useState(null);
+  const [quickQuestions, setQuickQuestions] = useState([]);
   const router = useRouter();
 
   useEffect(() => {
     async function fetchData() {
       try {
         const today = new Date().toLocaleDateString('en-CA', { timeZone: 'America/New_York' });
+        const start = new Date(Date.now() - 10 * 86400000).toLocaleDateString('en-CA', { timeZone: 'America/New_York' });
         const season = 2026;
         const base = 'https://statsapi.mlb.com/api/v1';
-        const [gameRes, standRes] = await Promise.all([
+        const [gameRes, standRes, recentRes] = await Promise.all([
           fetch(base + '/schedule?teamId=' + BRAVES_ID + '&sportId=1&startDate=' + today + '&endDate=' + today + '&hydrate=probablePitcher,linescore,broadcasts'),
           fetch(base + '/standings?leagueId=104&season=' + season + '&standingsTypes=regularSeason'),
+          fetch(base + '/schedule?teamId=' + BRAVES_ID + '&sportId=1&startDate=' + start + '&endDate=' + today),
         ]);
-        const [gameData, standData] = await Promise.all([gameRes.json(), standRes.json()]);
+        const [gameData, standData, recentData] = await Promise.all([gameRes.json(), standRes.json(), recentRes.json()]);
         if (gameData.dates && gameData.dates.length > 0) {
           setGame(gameData.dates[0].games[0]);
         } else {
@@ -35,6 +90,13 @@ export default function Today() {
         if (standData.records) {
           const nlEast = standData.records.find(r => r.division && r.division.id === 204);
           setStandings(nlEast ? nlEast.teamRecords.slice(0, 5) : null);
+        }
+        if (recentData.dates) {
+          const completed = recentData.dates
+            .flatMap(d => d.games || [])
+            .filter(g => g.status && g.status.abstractGameState === 'Final')
+            .sort((a, b) => new Date(b.gameDate) - new Date(a.gameDate));
+          setLastGame(completed[0] || null);
         }
       } catch (err) {
         console.error(err);
@@ -46,7 +108,16 @@ export default function Today() {
     return () => clearInterval(interval);
   }, []);
 
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setQuickQuestions(getAvailableQuestions());
+  }, []);
+
   const askAbout = (question) => {
+    if (QUICK_QUESTION_POOL.includes(question)) {
+      saveUsedQuestion(question);
+      setQuickQuestions(getAvailableQuestions());
+    }
     router.push('/ask?q=' + encodeURIComponent(question));
   };
 
@@ -56,10 +127,21 @@ export default function Today() {
     return d.toLocaleTimeString('en-US', { timeZone: 'America/New_York', hour: 'numeric', minute: '2-digit', hour12: true }) + ' ET';
   };
 
-  const getBroadcast = (g) => {
-    if (!g || !g.broadcasts) return null;
-    const tv = g.broadcasts.find(b => b.type === 'TV' || b.name);
-    return tv ? tv.name : null;
+  const getBroadcastInfo = (g) => {
+    if (!g || !g.broadcasts) return { tv: null, radio: null, hasFan: false };
+    const tv = g.broadcasts.filter(b => b.type === 'TV').map(b => b.name).filter(Boolean);
+    const radio = g.broadcasts.filter(b => b.type === 'Radio').map(b => b.name).filter(Boolean);
+    const hasFan = radio.some(name => /680|93\.7|the fan/i.test(name));
+    return {
+      tv: tv.length ? tv.join(', ') : null,
+      radio: radio.length ? radio.join(', ') : null,
+      hasFan,
+    };
+  };
+
+  const formatGameDate = (dateStr) => {
+    if (!dateStr) return '';
+    return new Date(dateStr).toLocaleDateString('en-US', { timeZone: 'America/New_York', weekday: 'short', month: 'short', day: 'numeric' });
   };
 
   if (loading) return (
@@ -84,7 +166,11 @@ export default function Today() {
   const inningHalf = game && game.linescore ? game.linescore.inningHalf : null;
   const bravesP = game ? (isHome ? game.teams.home.probablePitcher : game.teams.away.probablePitcher) : null;
   const oppP = game ? (isHome ? game.teams.away.probablePitcher : game.teams.home.probablePitcher) : null;
-  const broadcast = getBroadcast(game);
+  const broadcast = getBroadcastInfo(game);
+  const lastGameIsHome = lastGame && lastGame.teams && lastGame.teams.home && lastGame.teams.home.team && lastGame.teams.home.team.id === BRAVES_ID;
+  const lastBraves = lastGame ? (lastGameIsHome ? lastGame.teams.home : lastGame.teams.away) : null;
+  const lastOpponent = lastGame ? (lastGameIsHome ? lastGame.teams.away : lastGame.teams.home) : null;
+  const lastGameLink = lastGame ? 'https://www.mlb.com/gameday/' + lastGame.gamePk : null;
 
   return (
     <div className="min-h-[calc(100dvh-6rem)] bg-[#071b34] px-4 py-6 sm:py-8">
@@ -95,12 +181,6 @@ export default function Today() {
           <p className="mt-2 text-sm leading-6 text-blue-100">
             Live game context, fast Braves answers, standings, and a daily quiz in one pocket-friendly place.
           </p>
-          <button
-            onClick={() => askAbout(game ? "What should I know about today's Braves game?" : "When is the next Braves game?")}
-            className="mt-5 min-h-12 w-full rounded-2xl bg-[#CE1141] px-5 py-3 text-sm font-black text-white shadow-lg shadow-[#CE1141]/25 transition hover:bg-[#e01b50] active:scale-[0.99]"
-          >
-            Ask about the Braves
-          </button>
           <p className="mt-3 text-center text-xs text-blue-300">
             {new Date().toLocaleDateString('en-US', { timeZone: 'America/New_York', weekday: 'long', month: 'long', day: 'numeric' })}
           </p>
@@ -133,7 +213,8 @@ export default function Today() {
               <span className="rounded-full bg-white/15 px-3 py-1 text-xs font-black uppercase tracking-widest text-white">
                 {status === 'Live' ? (inningHalf + ' ' + inning) : status === 'Final' ? 'Final' : formatTime(game.gameDate)}
               </span>
-              {broadcast && <span className="truncate text-right text-xs font-bold text-white">TV: {broadcast}</span>}
+              {broadcast.tv && <span className="truncate text-right text-xs font-bold text-white">TV: {broadcast.tv}</span>}
+              {!broadcast.tv && broadcast.radio && <span className="truncate text-right text-xs font-bold text-white">Listen: {broadcast.radio}</span>}
               {status === 'Live' && <span className="flex items-center gap-1 text-xs font-black text-white"><span className="h-2 w-2 animate-pulse rounded-full bg-white"/> LIVE</span>}
             </div>
             <div className="px-5 py-5">
@@ -162,8 +243,49 @@ export default function Today() {
                 </div>
               )}
               <div className="mt-5 border-t border-white/10 pt-4">
-                <p className="text-xs font-medium text-blue-200">{opponent.team.name} · {isHome ? 'Truist Park' : 'Away'}</p>
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <p className="text-xs font-medium text-blue-200">{opponent.team.name} · {isHome ? 'Truist Park' : 'Away'}</p>
+                  <a
+                    href={FAN_LISTEN_URL}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="rounded-full border border-blue-700 px-3 py-2 text-xs font-bold text-blue-100 transition hover:border-blue-400 hover:bg-white/5 active:scale-[0.98]"
+                    aria-label="Listen live on 680 The Fan"
+                  >
+                    Listen live
+                  </a>
+                </div>
               </div>
+            </div>
+          </section>
+        )}
+
+        {lastGame && lastBraves && lastOpponent && (
+          <section className="rounded-[1.25rem] border border-blue-800/80 bg-[#102b50] p-4 shadow-xl shadow-black/10" aria-label="Last game recap">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <p className="text-xs font-bold uppercase tracking-[0.2em] text-blue-300">Last game recap</p>
+                <h2 className="mt-1 text-lg font-black text-white">
+                  Braves {lastBraves.score ?? 0}, {lastOpponent.team.name} {lastOpponent.score ?? 0}
+                </h2>
+                <p className="mt-1 text-sm text-blue-200">{formatGameDate(lastGame.gameDate)} · Official MLB Gameday</p>
+              </div>
+            </div>
+            <div className="mt-4 grid grid-cols-2 gap-2">
+              <a
+                href={lastGameLink}
+                target="_blank"
+                rel="noreferrer"
+                className="min-h-11 rounded-2xl bg-[#CE1141] px-4 py-3 text-center text-sm font-black text-white shadow-lg shadow-[#CE1141]/20 transition hover:bg-[#e01b50] active:scale-[0.98]"
+              >
+                Watch highlights
+              </a>
+              <button
+                onClick={() => askAbout('Give me a quick recap of the Braves last game.')}
+                className="min-h-11 rounded-2xl border border-blue-700 bg-[#071b34] px-4 py-3 text-sm font-black text-blue-100 transition hover:border-blue-400 hover:bg-[#0d2c53] active:scale-[0.98]"
+              >
+                Recap
+              </button>
             </div>
           </section>
         )}
@@ -172,16 +294,23 @@ export default function Today() {
           <div className="mb-3 flex items-start justify-between gap-4">
             <div>
               <p className="text-xs font-bold uppercase tracking-[0.2em] text-blue-300">Ask next</p>
-              <h2 className="mt-1 text-lg font-black text-white">Get a quick answer</h2>
+              <h2 className="mt-1 text-xl font-black leading-snug text-white">Keeping you in the know about all things Braves</h2>
+              <p className="mt-1 text-sm text-blue-200">Timely Braves prompts for game day, news, and team trends.</p>
             </div>
           </div>
           <div className="grid gap-2">
-            {QUICK_QUESTIONS.map((q, i) => (
+            {quickQuestions.map((q, i) => (
               <button key={i} onClick={() => askAbout(q)} className="min-h-11 rounded-2xl border border-blue-700 bg-[#071b34] px-4 py-2.5 text-left text-sm font-bold text-blue-100 transition hover:border-blue-400 hover:bg-[#0d2c53] active:scale-[0.99]">
                 {q}
               </button>
             ))}
           </div>
+          <button
+            onClick={() => askAbout(game ? "What should I know about today's Braves game?" : "When is the next Braves game?")}
+            className="mt-3 min-h-12 w-full rounded-2xl bg-[#CE1141] px-5 py-3 text-sm font-black text-white shadow-lg shadow-[#CE1141]/20 transition hover:bg-[#e01b50] active:scale-[0.99]"
+          >
+            Ask your own question
+          </button>
         </section>
 
         {standings && (

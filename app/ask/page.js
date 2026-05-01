@@ -74,7 +74,7 @@ function AskInner() {
           <p className="text-xs font-bold uppercase tracking-[0.22em] text-blue-200">Ask Chop Talk</p>
           <h1 className="mt-2 text-3xl font-black tracking-tight text-white">Braves answers, fast</h1>
           <p className="mt-2 text-sm leading-6 text-blue-100">
-            Ask about tonight&apos;s matchup, player stats, injuries, history, or whether the game is worth turning on.
+            Ask about tonight&apos;s matchup, player stats, injuries, history, and what Braves fans should know right now.
           </p>
         </div>
       </header>
