@@ -100,17 +100,22 @@ export default function Me() {
   };
 
   return (
-    <div className="min-h-[calc(100dvh-6rem)] bg-[#0C2340] px-4 py-8">
-      <div className="max-w-md mx-auto space-y-4">
-        <div className="text-center">
-          <h1 className="text-white text-3xl font-black tracking-tight">My Profile</h1>
-          <p className="text-blue-300 text-sm mt-1">Your Braves companion</p>
-        </div>
+    <div className="min-h-[calc(100dvh-6rem)] bg-[#071b34] px-4 py-6 sm:py-8">
+      <div className="mx-auto max-w-md space-y-4">
+        <header className="rounded-[1.5rem] border border-white/10 bg-[#0b284d] p-5 shadow-2xl shadow-black/20">
+          <p className="text-xs font-bold uppercase tracking-[0.22em] text-blue-200">Profile</p>
+          <h1 className="mt-2 text-3xl font-black tracking-tight text-white">{name ? `Hey, ${name}` : 'Make it yours'}</h1>
+          <p className="mt-2 text-sm leading-6 text-blue-100">
+            Save your fan name, choose a favorite Brave, and track the quiz streak that lives on this browser.
+          </p>
+        </header>
 
-        <div className="bg-[#13274F] rounded-2xl p-5 border border-blue-900">
+        <section className="rounded-[1.25rem] border border-blue-800/80 bg-[#102b50] p-5 shadow-xl shadow-black/10">
           {editingName ? (
             <div>
-              <p className="text-blue-400 text-xs uppercase tracking-widest mb-3">What should we call you?</p>
+              <p className="mb-2 text-xs font-bold uppercase tracking-[0.2em] text-blue-300">First step</p>
+              <h2 className="text-xl font-black text-white">What should we call you?</h2>
+              <p className="mt-1 text-sm text-blue-200">This only saves on this browser for now.</p>
               <div className="flex gap-2">
                 <input
                   type="text"
@@ -118,10 +123,11 @@ export default function Me() {
                   onChange={(e) => setTempName(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && saveName()}
                   placeholder="Enter your name..."
-                  className="flex-1 min-w-0 bg-[#0C2340] text-white placeholder-blue-600 text-sm px-3 py-2 rounded-xl border border-blue-800 outline-none"
+                  aria-label="Fan name"
+                  className="mt-4 min-h-11 flex-1 min-w-0 rounded-2xl border border-blue-800 bg-[#071b34] px-4 text-sm text-white outline-none placeholder:text-blue-300/70"
                   autoFocus
                 />
-                <button onClick={saveName} className="bg-[#CE1141] text-white text-sm font-bold px-4 py-2 rounded-xl hover:bg-red-700 transition-colors">
+                <button onClick={saveName} disabled={!tempName.trim()} className="mt-4 min-h-11 rounded-2xl bg-[#CE1141] px-5 py-2.5 text-sm font-black text-white shadow-lg shadow-[#CE1141]/20 transition hover:bg-[#e01b50] active:scale-[0.98] disabled:bg-blue-900 disabled:text-blue-300 disabled:shadow-none">
                   Save
                 </button>
               </div>
@@ -129,44 +135,58 @@ export default function Me() {
           ) : (
             <div className="flex items-center justify-between gap-4">
               <div>
-                <p className="text-blue-400 text-xs uppercase tracking-widest mb-1">Fan</p>
-                <p className="text-white text-2xl font-black">{name}</p>
+                <p className="mb-1 text-xs font-bold uppercase tracking-[0.2em] text-blue-300">Fan name</p>
+                <p className="text-2xl font-black text-white">{name}</p>
               </div>
-              <button onClick={() => { setTempName(name); setEditingName(true); }} className="text-blue-400 text-xs border border-blue-800 px-3 py-1 rounded-lg hover:text-white transition-colors">
+              <button onClick={() => { setTempName(name); setEditingName(true); }} className="min-h-10 rounded-full border border-blue-700 px-4 py-2 text-xs font-bold text-blue-100 transition hover:border-blue-400 hover:bg-white/5 active:scale-[0.98]">
                 Edit
               </button>
             </div>
           )}
-        </div>
+        </section>
 
-        <div className="bg-[#13274F] rounded-2xl p-5 border border-blue-900">
-          <p className="text-blue-400 text-xs uppercase tracking-widest mb-3">Quiz Streak</p>
+        <section className="rounded-[1.25rem] border border-blue-800/80 bg-[#102b50] p-5 shadow-xl shadow-black/10">
+          <p className="mb-3 text-xs font-bold uppercase tracking-[0.2em] text-blue-300">Quiz streak</p>
           <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-full bg-[#CE1141] flex items-center justify-center text-white font-black">S</div>
+            <div className="grid h-12 w-12 place-items-center rounded-full bg-[#CE1141] font-black text-white shadow-lg shadow-[#CE1141]/20">S</div>
             <div>
-              <p className="text-white text-4xl font-black">{streak} <span className="text-blue-400 text-lg font-normal">day{streak !== 1 ? 's' : ''}</span></p>
-              <p className="text-blue-400 text-xs mt-0.5">{streak === 0 ? 'Take the quiz to start your streak.' : streak >= 7 ? 'You are on a roll. Keep it going.' : 'Keep coming back daily.'}</p>
+              <p className="text-4xl font-black text-white">{streak} <span className="text-lg font-normal text-blue-300">day{streak !== 1 ? 's' : ''}</span></p>
+              <p className="mt-0.5 text-xs text-blue-300">{streak === 0 ? 'Take the quiz to start your streak.' : streak >= 7 ? 'You are on a roll. Keep it going.' : 'Keep coming back daily.'}</p>
             </div>
           </div>
-        </div>
+          {streak === 0 && (
+            <a href="/quiz" className="mt-5 block min-h-11 rounded-2xl bg-[#CE1141] px-5 py-3 text-center text-sm font-black text-white shadow-lg shadow-[#CE1141]/20 transition hover:bg-[#e01b50] active:scale-[0.98]">
+              Start today&apos;s quiz
+            </a>
+          )}
+        </section>
 
-        <div className="bg-[#13274F] rounded-2xl p-5 border border-blue-900">
-          <p className="text-blue-400 text-xs uppercase tracking-widest mb-3">Favorite Brave</p>
+        <section className="rounded-[1.25rem] border border-blue-800/80 bg-[#102b50] p-5 shadow-xl shadow-black/10">
+          <p className="mb-2 text-xs font-bold uppercase tracking-[0.2em] text-blue-300">Favorite Brave</p>
+          <h2 className="text-xl font-black text-white">Personalize the player card</h2>
+          <p className="mt-1 text-sm text-blue-200">Pick one player to keep a stat snapshot handy.</p>
           <div className="flex flex-wrap gap-2 mb-4">
             {PLAYERS.map((p) => (
-              <button key={p} onClick={() => selectPlayer(p)} className={`text-xs px-3 py-1.5 rounded-full border font-semibold transition-colors ${favPlayer === p ? 'bg-[#CE1141] border-[#CE1141] text-white' : 'bg-[#0C2340] border-blue-800 text-blue-300 hover:text-white'}`}>
+              <button key={p} onClick={() => selectPlayer(p)} aria-pressed={favPlayer === p} className={`min-h-10 rounded-full border px-3 py-2 text-xs font-bold transition-all active:scale-[0.98] ${favPlayer === p ? 'border-[#CE1141] bg-[#CE1141] text-white shadow-lg shadow-[#CE1141]/20' : 'border-blue-700 bg-[#071b34] text-blue-100 hover:border-blue-400 hover:bg-[#0d2c53]'}`}>
                 {p}
               </button>
             ))}
           </div>
 
+          {!favPlayer && (
+            <div className="rounded-2xl border border-dashed border-blue-700 bg-[#071b34] p-4 text-center">
+              <p className="text-sm font-bold text-white">No favorite selected yet</p>
+              <p className="mt-1 text-xs leading-5 text-blue-300">Choose a player above and this space becomes your quick stat card.</p>
+            </div>
+          )}
+
           {favPlayer && (
-            <div className="bg-[#0C2340] rounded-xl p-4 border border-blue-900">
+            <div className="rounded-2xl border border-blue-800 bg-[#071b34] p-4">
               {loadingStats ? (
-                <p className="text-blue-400 text-sm text-center">Loading stats...</p>
+                <p className="text-center text-sm text-blue-300" role="status">Loading stats...</p>
               ) : playerStats ? (
                 <div>
-                  <p className="text-white font-bold text-sm mb-3">{playerStats.name} - 2026 Stats</p>
+                  <p className="mb-3 text-sm font-black text-white">{playerStats.name} - 2026 Stats</p>
                   {playerStats.type === 'hitting' ? (
                     <div className="grid grid-cols-4 gap-2 text-center">
                       {[
@@ -175,9 +195,9 @@ export default function Me() {
                         ['RBI', playerStats.stat.rbi || 0],
                         ['OPS', playerStats.stat.ops || '.000'],
                       ].map(([label, val]) => (
-                        <div key={label}>
-                          <p className="text-white font-black text-lg">{val}</p>
-                          <p className="text-blue-400 text-xs">{label}</p>
+                        <div key={label} className="rounded-xl bg-[#102b50] p-2">
+                          <p className="text-lg font-black text-white">{val}</p>
+                          <p className="text-xs text-blue-300">{label}</p>
                         </div>
                       ))}
                     </div>
@@ -189,29 +209,29 @@ export default function Me() {
                         ['WHIP', playerStats.stat.whip || '-.--'],
                         ['K', playerStats.stat.strikeOuts || 0],
                       ].map(([label, val]) => (
-                        <div key={label}>
-                          <p className="text-white font-black text-lg">{val}</p>
-                          <p className="text-blue-400 text-xs">{label}</p>
+                        <div key={label} className="rounded-xl bg-[#102b50] p-2">
+                          <p className="text-lg font-black text-white">{val}</p>
+                          <p className="text-xs text-blue-300">{label}</p>
                         </div>
                       ))}
                     </div>
                   )}
                 </div>
               ) : (
-                <p className="text-blue-400 text-sm text-center">
+                <p className="text-center text-sm leading-6 text-blue-300">
                   No 2026 stat line found yet. This can happen before a player appears in a game or when roster data changes.
                 </p>
               )}
             </div>
           )}
-        </div>
+        </section>
 
-        <div className="bg-[#13274F] rounded-2xl p-5 border border-blue-900">
-          <p className="text-blue-400 text-xs uppercase tracking-widest mb-3">About</p>
-          <p className="text-white font-bold text-sm">Chop Talk</p>
-          <p className="text-blue-400 text-xs mt-1">Your Atlanta Braves companion for live scores, Q&A, daily trivia, and standings.</p>
-          <p className="text-blue-600 text-xs mt-3">Version 1.0</p>
-        </div>
+        <section className="rounded-[1.25rem] border border-blue-800/80 bg-[#102b50] p-5 shadow-xl shadow-black/10">
+          <p className="mb-3 text-xs font-bold uppercase tracking-[0.2em] text-blue-300">About</p>
+          <p className="text-sm font-black text-white">Chop Talk</p>
+          <p className="mt-1 text-xs leading-5 text-blue-300">Your Atlanta Braves companion for live scores, Q&A, daily trivia, and standings.</p>
+          <p className="mt-3 text-xs text-blue-500">Version 1.0</p>
+        </section>
       </div>
     </div>
   );

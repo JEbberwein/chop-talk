@@ -3,6 +3,12 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 
 const BRAVES_ID = 144;
+const QUICK_QUESTIONS = [
+  "Who is pitching tonight?",
+  "Where can I watch the game?",
+  "How is the bullpen performing?",
+  "Latest Braves news?",
+];
 
 export default function Today() {
   const [game, setGame] = useState(null);
@@ -57,11 +63,15 @@ export default function Today() {
   };
 
   if (loading) return (
-    <div className="min-h-screen bg-[#0C2340] flex items-center justify-center">
-      <div className="flex gap-1">
-        <span className="w-3 h-3 bg-[#CE1141] rounded-full animate-bounce" style={{animationDelay:'0ms'}}/>
-        <span className="w-3 h-3 bg-[#CE1141] rounded-full animate-bounce" style={{animationDelay:'150ms'}}/>
-        <span className="w-3 h-3 bg-[#CE1141] rounded-full animate-bounce" style={{animationDelay:'300ms'}}/>
+    <div className="min-h-[calc(100dvh-6rem)] bg-[#071b34] px-4 py-8">
+      <div className="mx-auto flex min-h-[60dvh] max-w-md flex-col items-center justify-center text-center">
+        <div className="mb-5 flex gap-1.5" role="status" aria-label="Loading today's Braves snapshot">
+          <span className="h-3 w-3 animate-bounce rounded-full bg-[#CE1141]" style={{animationDelay:'0ms'}}/>
+          <span className="h-3 w-3 animate-bounce rounded-full bg-[#CE1141]" style={{animationDelay:'150ms'}}/>
+          <span className="h-3 w-3 animate-bounce rounded-full bg-[#CE1141]" style={{animationDelay:'300ms'}}/>
+        </div>
+        <p className="text-sm font-semibold text-white">Loading your Braves snapshot</p>
+        <p className="mt-1 text-xs text-blue-200">Game, standings, and quick questions are coming up.</p>
       </div>
     </div>
   );
@@ -77,84 +87,107 @@ export default function Today() {
   const broadcast = getBroadcast(game);
 
   return (
-    <div className="min-h-[calc(100dvh-6rem)] bg-[#0C2340] px-4 py-8">
-      <div className="max-w-md mx-auto space-y-4">
-        <div className="text-center">
-          <h1 className="text-white text-3xl font-black tracking-tight">Chop Talk</h1>
-          <p className="text-blue-300 text-sm mt-1">{new Date().toLocaleDateString('en-US', { timeZone: 'America/New_York', weekday: 'long', month: 'long', day: 'numeric' })}</p>
+    <div className="min-h-[calc(100dvh-6rem)] bg-[#071b34] px-4 py-6 sm:py-8">
+      <div className="mx-auto max-w-md space-y-4">
+        <header className="rounded-[1.5rem] border border-white/10 bg-[#0b284d] p-5 shadow-2xl shadow-black/20">
+          <p className="text-xs font-bold uppercase tracking-[0.22em] text-blue-200">Atlanta Braves companion</p>
+          <h1 className="mt-2 text-3xl font-black tracking-tight text-white">Chop Talk</h1>
+          <p className="mt-2 text-sm leading-6 text-blue-100">
+            Live game context, fast Braves answers, standings, and a daily quiz in one pocket-friendly place.
+          </p>
+          <button
+            onClick={() => askAbout(game ? "What should I know about today's Braves game?" : "When is the next Braves game?")}
+            className="mt-5 min-h-12 w-full rounded-2xl bg-[#CE1141] px-5 py-3 text-sm font-black text-white shadow-lg shadow-[#CE1141]/25 transition hover:bg-[#e01b50] active:scale-[0.99]"
+          >
+            Ask about the Braves
+          </button>
+          <p className="mt-3 text-center text-xs text-blue-300">
+            {new Date().toLocaleDateString('en-US', { timeZone: 'America/New_York', weekday: 'long', month: 'long', day: 'numeric' })}
+          </p>
+        </header>
+
+        <div className="flex items-center justify-between px-1">
+          <div>
+            <p className="text-xs font-bold uppercase tracking-[0.2em] text-blue-300">Today</p>
+            <h2 className="text-lg font-black text-white">Game snapshot</h2>
+          </div>
+          <button
+            onClick={() => askAbout("Give me the Braves game preview in plain English.")}
+            className="rounded-full border border-blue-700 px-3 py-2 text-xs font-bold text-blue-100 transition hover:border-blue-400 hover:bg-white/5 active:scale-[0.98]"
+          >
+            Preview
+          </button>
         </div>
 
         {!game ? (
-          <div className="bg-[#13274F] rounded-2xl p-6 border border-blue-900 text-center">
-            <p className="text-white font-bold text-lg">No game today</p>
-            <p className="text-blue-400 text-sm mt-1">Enjoy the off day · the Braves will be back soon.</p>
-            <button onClick={() => askAbout('When is the next Braves game?')} className="mt-4 bg-[#CE1141] text-white text-sm font-bold px-5 py-2 rounded-xl hover:bg-red-700 transition-colors">
+          <div className="rounded-[1.25rem] border border-blue-800/80 bg-[#102b50] p-5 text-center shadow-xl shadow-black/10">
+            <p className="text-xl font-black text-white">No game today</p>
+            <p className="mt-2 text-sm leading-6 text-blue-200">Enjoy the off day. You can still ask about the next matchup, standings, roster news, or recent trends.</p>
+            <button onClick={() => askAbout('When is the next Braves game?')} className="mt-5 min-h-11 rounded-2xl bg-[#CE1141] px-5 py-2.5 text-sm font-black text-white transition hover:bg-[#e01b50] active:scale-[0.98]">
               When is the next game?
             </button>
           </div>
         ) : (
-          <div className="bg-[#13274F] rounded-2xl border border-blue-900 overflow-hidden">
-            <div className="bg-[#CE1141] px-4 py-2 flex justify-between items-center">
-              <span className="text-white text-xs font-bold uppercase tracking-widest">
+          <section className="overflow-hidden rounded-[1.25rem] border border-blue-700/80 bg-[#102b50] shadow-xl shadow-black/15" aria-label="Today's Braves game">
+            <div className="flex items-center justify-between gap-3 bg-[#CE1141] px-4 py-3">
+              <span className="rounded-full bg-white/15 px-3 py-1 text-xs font-black uppercase tracking-widest text-white">
                 {status === 'Live' ? (inningHalf + ' ' + inning) : status === 'Final' ? 'Final' : formatTime(game.gameDate)}
               </span>
-              {broadcast && <span className="text-white text-xs font-semibold">TV: {broadcast}</span>}
-              {status === 'Live' && <span className="flex items-center gap-1 text-white text-xs font-bold"><span className="w-2 h-2 bg-white rounded-full animate-pulse"/> LIVE</span>}
+              {broadcast && <span className="truncate text-right text-xs font-bold text-white">TV: {broadcast}</span>}
+              {status === 'Live' && <span className="flex items-center gap-1 text-xs font-black text-white"><span className="h-2 w-2 animate-pulse rounded-full bg-white"/> LIVE</span>}
             </div>
-            <div className="px-6 py-5">
-              <div className="flex items-center justify-between">
-                <div className="text-center flex-1">
-                  <p className="text-white font-black text-lg">ATL</p>
-                  <p className="text-blue-300 text-xs">{isHome ? 'Home' : 'Away'}</p>
-                  {(status === 'Live' || status === 'Final') && <p className="text-white text-5xl font-black mt-2">{braves.score ?? 0}</p>}
+            <div className="px-5 py-5">
+              <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-4">
+                <div className="text-center">
+                  <p className="text-2xl font-black text-white">ATL</p>
+                  <p className="mt-1 text-xs font-semibold text-blue-200">{isHome ? 'Home' : 'Away'}</p>
+                  {(status === 'Live' || status === 'Final') && <p className="mt-2 text-5xl font-black text-white">{braves.score ?? 0}</p>}
                 </div>
-                <div className="text-center px-4">
-                  <p className="text-blue-400 text-2xl font-black">{status === 'Preview' ? 'VS' : '-'}</p>
+                <div className="rounded-full border border-blue-700 bg-[#071b34] px-3 py-2 text-center">
+                  <p className="text-sm font-black text-blue-200">{status === 'Preview' ? 'VS' : '-'}</p>
                 </div>
-                <div className="text-center flex-1">
-                  <p className="text-white font-black text-lg">{opponent.team.abbreviation || opponent.team.name.split(' ').pop()}</p>
-                  <p className="text-blue-300 text-xs">{isHome ? 'Away' : 'Home'}</p>
-                  {(status === 'Live' || status === 'Final') && <p className="text-white text-5xl font-black mt-2">{opponent.score ?? 0}</p>}
+                <div className="text-center">
+                  <p className="text-2xl font-black text-white">{opponent.team.abbreviation || opponent.team.name.split(' ').pop()}</p>
+                  <p className="mt-1 text-xs font-semibold text-blue-200">{isHome ? 'Away' : 'Home'}</p>
+                  {(status === 'Live' || status === 'Final') && <p className="mt-2 text-5xl font-black text-white">{opponent.score ?? 0}</p>}
                 </div>
               </div>
               {status === 'Preview' && (bravesP || oppP) && (
-                <div className="mt-4 pt-4 border-t border-blue-900">
-                  <p className="text-blue-400 text-xs uppercase tracking-widest mb-2 text-center">Probable Pitchers</p>
-                  <div className="flex justify-between text-center">
-                    <div className="flex-1"><p className="text-white text-sm font-bold">{bravesP ? bravesP.fullName : 'TBD'}</p><p className="text-blue-400 text-xs">ATL</p></div>
-                    <div className="flex-1"><p className="text-white text-sm font-bold">{oppP ? oppP.fullName : 'TBD'}</p><p className="text-blue-400 text-xs">{opponent.team.abbreviation}</p></div>
+                <div className="mt-5 border-t border-white/10 pt-4">
+                  <p className="mb-3 text-center text-xs font-bold uppercase tracking-[0.2em] text-blue-300">Probable pitchers</p>
+                  <div className="grid grid-cols-2 gap-3 text-center">
+                    <div className="rounded-2xl bg-[#071b34] p-3"><p className="text-sm font-black text-white">{bravesP ? bravesP.fullName : 'TBD'}</p><p className="mt-1 text-xs text-blue-300">ATL</p></div>
+                    <div className="rounded-2xl bg-[#071b34] p-3"><p className="text-sm font-black text-white">{oppP ? oppP.fullName : 'TBD'}</p><p className="mt-1 text-xs text-blue-300">{opponent.team.abbreviation}</p></div>
                   </div>
                 </div>
               )}
-              <div className="mt-4 pt-4 border-t border-blue-900">
-                <p className="text-blue-400 text-xs">{opponent.team.name} · {isHome ? 'Truist Park' : 'Away'}</p>
+              <div className="mt-5 border-t border-white/10 pt-4">
+                <p className="text-xs font-medium text-blue-200">{opponent.team.name} · {isHome ? 'Truist Park' : 'Away'}</p>
               </div>
             </div>
-          </div>
+          </section>
         )}
 
-        <div className="bg-[#13274F] rounded-2xl p-4 border border-blue-900">
-          <p className="text-blue-400 text-xs uppercase tracking-widest mb-3">Ask Chop Talk</p>
-          <div className="flex flex-wrap gap-2">
-            {[
-              "Who is pitching tonight?",
-              "Where can I watch the game?",
-              "Who leads the team in home runs?",
-              "How is the bullpen performing?",
-              "What is the Braves record?",
-              "Latest Braves news?"
-            ].map((q, i) => (
-              <button key={i} onClick={() => askAbout(q)} className="bg-[#0C2340] border border-blue-800 text-blue-300 text-xs px-3 py-2 rounded-full hover:bg-blue-900 hover:text-white transition-colors">
+        <section className="rounded-[1.25rem] border border-blue-800/80 bg-[#102b50] p-4 shadow-xl shadow-black/10">
+          <div className="mb-3 flex items-start justify-between gap-4">
+            <div>
+              <p className="text-xs font-bold uppercase tracking-[0.2em] text-blue-300">Ask next</p>
+              <h2 className="mt-1 text-lg font-black text-white">Get a quick answer</h2>
+            </div>
+          </div>
+          <div className="grid gap-2">
+            {QUICK_QUESTIONS.map((q, i) => (
+              <button key={i} onClick={() => askAbout(q)} className="min-h-11 rounded-2xl border border-blue-700 bg-[#071b34] px-4 py-2.5 text-left text-sm font-bold text-blue-100 transition hover:border-blue-400 hover:bg-[#0d2c53] active:scale-[0.99]">
                 {q}
               </button>
             ))}
           </div>
-        </div>
+        </section>
 
         {standings && (
-          <div className="bg-[#13274F] rounded-2xl p-4 border border-blue-900">
-            <p className="text-blue-400 text-xs uppercase tracking-widest mb-3">NL East Standings</p>
-            <div className="flex text-blue-500 text-xs uppercase tracking-widest mb-2 px-1">
+          <section className="rounded-[1.25rem] border border-blue-800/80 bg-[#102b50] p-4 shadow-xl shadow-black/10" aria-label="NL East standings">
+            <p className="mb-3 text-xs font-bold uppercase tracking-[0.2em] text-blue-300">NL East standings</p>
+            <div className="mb-2 flex px-1 text-xs font-bold uppercase tracking-[0.16em] text-blue-300">
               <span className="w-6"></span>
               <span className="flex-1">Team</span>
               <span className="w-16 text-center">W-L</span>
@@ -163,7 +196,7 @@ export default function Today() {
             </div>
             <div className="space-y-2">
               {standings.map((t, i) => (
-                <div key={i} className={"flex items-center py-1.5 px-1 rounded-lg " + (t.team.id === BRAVES_ID ? "bg-[#CE1141] bg-opacity-20 text-white font-bold" : "text-blue-300")}>
+                <div key={i} className={"flex items-center rounded-2xl px-3 py-2.5 " + (t.team.id === BRAVES_ID ? "bg-[#CE1141] text-white font-black shadow-lg shadow-[#CE1141]/15" : "bg-[#071b34] text-blue-100")}>
                   <span className="text-xs w-6">{i + 1}</span>
                   <span className="flex-1 text-sm">{t.team.name}</span>
                   <span className="text-xs w-16 text-center">{t.wins}-{t.losses}</span>
@@ -172,7 +205,7 @@ export default function Today() {
                 </div>
               ))}
             </div>
-          </div>
+          </section>
         )}
       </div>
     </div>

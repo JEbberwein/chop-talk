@@ -19,15 +19,19 @@ const icons = {
 export default function NavBar() {
   const pathname = usePathname();
   return (
-    <nav className="fixed bottom-0 left-0 right-0 bg-[#13274F] border-t border-blue-900 z-50">
-      <div className="max-w-md mx-auto flex">
+    <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-white/10 bg-[#091f3d]/95 shadow-[0_-18px_45px_rgba(0,0,0,0.32)] backdrop-blur-xl" aria-label="Primary navigation">
+      <div className="max-w-md mx-auto flex px-2">
         {nav.map(({ href, label, icon }) => {
           const active = pathname === href;
           return (
-            <Link key={href} href={href} className={`flex-1 flex flex-col items-center justify-center pt-3 pb-4 transition-colors ${active ? 'text-white' : 'text-blue-500 hover:text-blue-300'}`}>
-              <span className={active ? 'text-white' : 'text-blue-500'}>{icons[icon]}</span>
-              <span className={`text-xs mt-1 font-bold ${active ? 'text-[#CE1141]' : ''}`}>{label}</span>
-              {active && <span className="w-1 h-1 bg-[#CE1141] rounded-full mt-0.5"/>}
+            <Link
+              key={href}
+              href={href}
+              aria-current={active ? 'page' : undefined}
+              className={`flex-1 flex min-h-16 flex-col items-center justify-center rounded-2xl px-2 pt-2.5 pb-3 transition-all active:scale-[0.97] ${active ? 'text-white' : 'text-blue-300 hover:bg-white/5 hover:text-white'}`}
+            >
+              <span className={`grid h-8 w-10 place-items-center rounded-full transition-colors ${active ? 'bg-[#CE1141] text-white shadow-lg shadow-[#CE1141]/25' : 'text-blue-300'}`}>{icons[icon]}</span>
+              <span className={`text-[0.7rem] mt-1 font-bold ${active ? 'text-white' : ''}`}>{label}</span>
             </Link>
           );
         })}

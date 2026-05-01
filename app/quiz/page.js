@@ -158,30 +158,34 @@ export default function Quiz() {
 
   if (alreadyDone && todayResult && stats) {
     return (
-      <div className="min-h-[calc(100dvh-6rem)] bg-[#0C2340] px-4 py-8 flex flex-col items-center justify-center">
-        <div className="max-w-md w-full text-center space-y-4">
-          <h1 className="text-white text-3xl font-black">Daily Quiz</h1>
-          <div className="bg-[#13274F] rounded-2xl p-6 border border-blue-900">
-            <p className="text-blue-400 text-xs uppercase tracking-widest mb-2">Today&apos;s Score</p>
-            <p className="text-white text-6xl font-black">{todayResult.score}<span className="text-3xl text-blue-400">/5</span></p>
-            <div className="flex justify-center gap-1 mt-3">
-              {[0,1,2,3,4].map(i => <span key={i} className={"w-8 h-8 rounded-full flex items-center justify-center text-xs font-black " + (i < todayResult.score ? "bg-green-600 text-white" : "bg-red-800 text-white")}>{i < todayResult.score ? "+" : "-"}</span>)}
+      <div className="flex min-h-[calc(100dvh-6rem)] flex-col items-center justify-center bg-[#071b34] px-4 py-8">
+        <div className="w-full max-w-md space-y-4 text-center">
+          <header className="rounded-[1.5rem] border border-white/10 bg-[#0b284d] p-5 shadow-2xl shadow-black/20">
+            <p className="text-xs font-bold uppercase tracking-[0.22em] text-blue-200">Daily Quiz</p>
+            <h1 className="mt-2 text-3xl font-black text-white">You&apos;re set for today</h1>
+            <p className="mt-2 text-sm leading-6 text-blue-100">Come back tomorrow for a fresh five-question Braves challenge.</p>
+          </header>
+          <div className="rounded-[1.25rem] border border-blue-800/80 bg-[#102b50] p-6 shadow-xl shadow-black/10">
+            <p className="text-xs font-bold uppercase tracking-[0.2em] text-blue-300">Today&apos;s score</p>
+            <p className="mt-2 text-6xl font-black text-white">{todayResult.score}<span className="text-3xl text-blue-300">/5</span></p>
+            <div className="mt-4 flex justify-center gap-2" aria-label={`${todayResult.score} correct out of 5`}>
+              {[0,1,2,3,4].map(i => <span key={i} aria-label={i < todayResult.score ? "Correct" : "Miss"} className={"flex h-9 w-9 items-center justify-center rounded-full text-xs font-black " + (i < todayResult.score ? "bg-green-600 text-white" : "bg-red-800 text-white")}>{i < todayResult.score ? "+" : "-"}</span>)}
             </div>
           </div>
           <div className="grid grid-cols-2 gap-3">
-            <div className="bg-[#13274F] rounded-2xl p-4 border border-blue-900">
-              <p className="text-blue-400 text-xs uppercase tracking-widest mb-1">Streak</p>
-              <p className="text-white text-3xl font-black">{stats.streak}</p>
-              <p className="text-blue-400 text-xs">Best: {stats.bestStreak}</p>
+            <div className="rounded-[1.25rem] border border-blue-800/80 bg-[#102b50] p-4 shadow-xl shadow-black/10">
+              <p className="mb-1 text-xs font-bold uppercase tracking-[0.18em] text-blue-300">Streak</p>
+              <p className="text-3xl font-black text-white">{stats.streak}</p>
+              <p className="text-xs text-blue-300">Best: {stats.bestStreak}</p>
             </div>
-            <div className="bg-[#13274F] rounded-2xl p-4 border border-blue-900">
-              <p className="text-blue-400 text-xs uppercase tracking-widest mb-1">Accuracy</p>
-              <p className="text-white text-3xl font-black">{pct}%</p>
-              <p className="text-blue-400 text-xs">{stats.totalCorrect}/{stats.totalQuestions} correct</p>
+            <div className="rounded-[1.25rem] border border-blue-800/80 bg-[#102b50] p-4 shadow-xl shadow-black/10">
+              <p className="mb-1 text-xs font-bold uppercase tracking-[0.18em] text-blue-300">Accuracy</p>
+              <p className="text-3xl font-black text-white">{pct}%</p>
+              <p className="text-xs text-blue-300">{stats.totalCorrect}/{stats.totalQuestions} correct</p>
             </div>
           </div>
-          <div className="bg-[#13274F] rounded-2xl p-4 border border-blue-900">
-            <p className="text-blue-400 text-xs uppercase tracking-widest mb-3">Last 7 Days</p>
+          <div className="rounded-[1.25rem] border border-blue-800/80 bg-[#102b50] p-4 shadow-xl shadow-black/10">
+            <p className="mb-3 text-xs font-bold uppercase tracking-[0.2em] text-blue-300">Last 7 days</p>
             <div className="flex justify-center gap-2">
               {(stats.history || []).slice(0, 7).map((h, i) => (
                 <div key={i} className="text-center">
@@ -191,7 +195,9 @@ export default function Quiz() {
               ))}
             </div>
           </div>
-          <p className="text-blue-500 text-sm">Come back tomorrow for a new quiz!</p>
+          <a href="/ask?q=Give%20me%20one%20Braves%20fact%20to%20learn%20before%20tomorrow's%20quiz" className="block min-h-11 rounded-2xl border border-blue-700 px-5 py-3 text-sm font-black text-blue-100 transition hover:border-blue-400 hover:bg-white/5 active:scale-[0.98]">
+            Learn one more Braves fact
+          </a>
         </div>
       </div>
     );
@@ -199,14 +205,18 @@ export default function Quiz() {
 
   if (done && stats) {
     return (
-      <div className="min-h-[calc(100dvh-6rem)] bg-[#0C2340] px-4 py-8 flex flex-col items-center justify-center">
-        <div className="max-w-md w-full text-center space-y-4">
-          <h1 className="text-white text-3xl font-black">Quiz Complete!</h1>
-          <div className="bg-[#13274F] rounded-2xl p-6 border border-blue-900">
-            <p className="text-blue-400 text-xs uppercase tracking-widest mb-2">Today&apos;s Score</p>
-            <p className="text-white text-6xl font-black">{score}<span className="text-3xl text-blue-400">/5</span></p>
-            <div className="flex justify-center gap-1 mt-3">
-              {[0,1,2,3,4].map(i => <span key={i} className={"w-8 h-8 rounded-full flex items-center justify-center text-xs font-black " + (i < score ? "bg-green-600 text-white" : "bg-red-800 text-white")}>{i < score ? "+" : "-"}</span>)}
+      <div className="flex min-h-[calc(100dvh-6rem)] flex-col items-center justify-center bg-[#071b34] px-4 py-8">
+        <div className="w-full max-w-md space-y-4 text-center">
+          <header className="rounded-[1.5rem] border border-white/10 bg-[#0b284d] p-5 shadow-2xl shadow-black/20">
+            <p className="text-xs font-bold uppercase tracking-[0.22em] text-blue-200">Quiz complete</p>
+            <h1 className="mt-2 text-3xl font-black text-white">{score >= 4 ? 'Strong finish' : 'Nice work today'}</h1>
+            <p className="mt-2 text-sm leading-6 text-blue-100">Your streak was saved on this browser. Keep showing up daily to build it.</p>
+          </header>
+          <div className="rounded-[1.25rem] border border-blue-800/80 bg-[#102b50] p-6 shadow-xl shadow-black/10">
+            <p className="text-xs font-bold uppercase tracking-[0.2em] text-blue-300">Today&apos;s score</p>
+            <p className="mt-2 text-6xl font-black text-white">{score}<span className="text-3xl text-blue-300">/5</span></p>
+            <div className="mt-4 flex justify-center gap-2" aria-label={`${score} correct out of 5`}>
+              {[0,1,2,3,4].map(i => <span key={i} aria-label={i < score ? "Correct" : "Miss"} className={"flex h-9 w-9 items-center justify-center rounded-full text-xs font-black " + (i < score ? "bg-green-600 text-white" : "bg-red-800 text-white")}>{i < score ? "+" : "-"}</span>)}
             </div>
           </div>
           <div className="grid grid-cols-2 gap-3">
@@ -232,7 +242,9 @@ export default function Quiz() {
               ))}
             </div>
           </div>
-          <p className="text-blue-500 text-sm">Come back tomorrow for a new quiz!</p>
+          <a href="/ask?q=Explain%20one%20Braves%20topic%20from%20today's%20quiz" className="block min-h-11 rounded-2xl border border-blue-700 px-5 py-3 text-sm font-black text-blue-100 transition hover:border-blue-400 hover:bg-white/5 active:scale-[0.98]">
+            Ask about a quiz topic
+          </a>
         </div>
       </div>
     );
@@ -240,34 +252,45 @@ export default function Quiz() {
 
   const q = questions[cur];
   return (
-    <div className="min-h-[calc(100dvh-6rem)] bg-[#0C2340] px-4 py-8">
-      <div className="max-w-md mx-auto space-y-6">
-        <div className="text-center">
-          <h1 className="text-white text-3xl font-black">Daily Quiz</h1>
-          <p className="text-blue-300 text-sm mt-1">Streak: {stats ? stats.streak : 0} days</p>
-        </div>
-        <div className="bg-[#13274F] rounded-2xl p-4 border border-blue-900">
-          <div className="flex justify-between mb-2">
+    <div className="min-h-[calc(100dvh-6rem)] bg-[#071b34] px-4 py-6 sm:py-8">
+      <div className="mx-auto max-w-md space-y-5">
+        <header className="rounded-[1.5rem] border border-white/10 bg-[#0b284d] p-5 shadow-2xl shadow-black/20">
+          <p className="text-xs font-bold uppercase tracking-[0.22em] text-blue-200">Daily Quiz</p>
+          <h1 className="mt-2 text-3xl font-black text-white">Five questions. One streak.</h1>
+          <p className="mt-2 text-sm leading-6 text-blue-100">Test your Braves knowledge in under a minute. Your first answer locks in.</p>
+          <div className="mt-4 rounded-2xl bg-[#071b34] px-4 py-3 text-sm font-bold text-blue-100">Current streak: {stats ? stats.streak : 0} day{stats && stats.streak === 1 ? '' : 's'}</div>
+        </header>
+        <section className="rounded-[1.25rem] border border-blue-800/80 bg-[#102b50] p-4 shadow-xl shadow-black/10" aria-label={`Question ${cur + 1} of 5`}>
+          <div className="mb-3 flex justify-between">
             {questions.map((_, i) => (
-              <div key={i} className={"h-2 flex-1 mx-0.5 rounded-full " + (i < cur ? "bg-[#CE1141]" : i === cur ? "bg-blue-400" : "bg-blue-900")} />
+              <div key={i} className={"mx-0.5 h-2 flex-1 rounded-full " + (i < cur ? "bg-[#CE1141]" : i === cur ? "bg-blue-300" : "bg-blue-950")} />
             ))}
           </div>
-          <p className="text-blue-400 text-xs text-right">Question {cur + 1} of 5</p>
-        </div>
-        <div className="bg-[#13274F] rounded-2xl p-6 border border-blue-900">
-          <p className="text-white text-lg font-bold leading-snug">{q.q}</p>
-        </div>
+          <p className="text-right text-xs font-bold uppercase tracking-[0.16em] text-blue-300">Question {cur + 1} of 5</p>
+        </section>
+        <section className="rounded-[1.25rem] border border-blue-800/80 bg-[#102b50] p-5 shadow-xl shadow-black/10">
+          <p className="text-xl font-black leading-snug text-white">{q.q}</p>
+          <p className="mt-3 text-xs text-blue-300">Choose the best answer.</p>
+        </section>
         <div className="space-y-3">
           {q.opts.map((opt, i) => {
-            let style = "bg-[#13274F] border-blue-900 text-white";
+            let style = "bg-[#102b50] border-blue-800 text-white hover:border-blue-400 hover:bg-[#12315b]";
+            let feedback = "";
             if (sel !== null) {
-              if (i === q.a) style = "bg-green-700 border-green-600 text-white";
-              else if (i === sel && sel !== q.a) style = "bg-red-800 border-red-700 text-white";
-              else style = "bg-[#13274F] border-blue-900 text-blue-500";
+              if (i === q.a) {
+                style = "bg-green-700 border-green-500 text-white";
+                feedback = "Correct";
+              } else if (i === sel && sel !== q.a) {
+                style = "bg-red-800 border-red-600 text-white";
+                feedback = "Your pick";
+              } else {
+                style = "bg-[#102b50] border-blue-900 text-blue-400";
+              }
             }
             return (
-              <button key={i} onClick={() => pick(i)} className={"w-full text-left px-5 py-4 rounded-2xl border font-semibold transition-all " + style}>
-                {opt}
+              <button key={i} onClick={() => pick(i)} disabled={sel !== null} className={"flex min-h-14 w-full items-center justify-between gap-3 rounded-2xl border px-5 py-4 text-left font-bold transition-all active:scale-[0.99] " + style}>
+                <span>{opt}</span>
+                {feedback && <span className="shrink-0 text-xs uppercase tracking-[0.14em]">{feedback}</span>}
               </button>
             );
           })}
