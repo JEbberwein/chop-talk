@@ -5,7 +5,16 @@ import NavBar from "./navbar";
 const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
 const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] });
 
-export const metadata = { title: "Chop Talk", description: "Your Atlanta Braves companion" };
+export const metadata = {
+  title: "Chop Talk",
+  description: "Your Atlanta Braves companion",
+  manifest: "/manifest.webmanifest",
+  appleWebApp: {
+    capable: true,
+    title: "Chop Talk",
+    statusBarStyle: "black-translucent",
+  },
+};
 
 export default function RootLayout({ children }) {
   return (
