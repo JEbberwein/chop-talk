@@ -4,16 +4,16 @@ import { usePathname } from "next/navigation";
 
 const nav = [
   { href: '/', label: 'Today', icon: 'baseball' },
+  { href: '/gameday', label: 'GameDay', icon: 'target' },
   { href: '/ask', label: 'Ask', icon: 'chat' },
-  { href: '/quiz', label: 'Quiz', icon: 'brain' },
-  { href: '/me', label: 'Me', icon: 'tomahawk' },
+  { href: '/me', label: 'My Braves', icon: 'star' },
 ];
 
 const icons = {
   baseball: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-6 h-6"><circle cx="12" cy="12" r="10"/><path d="M12 2a10 10 0 0 1 0 20"/></svg>,
+  target: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-6 h-6"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4"/><path d="M12 3v3M21 12h-3M12 21v-3M3 12h3"/></svg>,
   chat: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-6 h-6"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>,
-  brain: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-6 h-6"><path d="M9.5 2a2.5 2.5 0 0 1 5 0v1a2.5 2.5 0 0 1 5 2.5V7a5 5 0 0 1-5 5H9.5A5 5 0 0 1 4.5 7V5.5A2.5 2.5 0 0 1 9.5 3V2z"/><path d="M4.5 12a5 5 0 0 0 5 5h5a5 5 0 0 0 5-5"/><path d="M12 17v5"/><path d="M9 22h6"/></svg>,
-  tomahawk: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-6 h-6"><path d="M3 21l9-9"/><path d="M12 12l4-4-1-4 4 1-4 4"/></svg>,
+  star: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-6 h-6"><path d="m12 3 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2-5.6-2.9-5.6 2.9 1.1-6.2L3 9.6l6.2-.9L12 3z"/></svg>,
 };
 
 export default function NavBar() {
@@ -28,7 +28,7 @@ export default function NavBar() {
               key={href}
               href={href}
               aria-current={active ? 'page' : undefined}
-              className={`flex-1 flex min-h-16 flex-col items-center justify-center rounded-2xl px-2 pt-2.5 pb-3 transition-all active:scale-[0.97] ${active ? 'text-white' : 'text-blue-300 hover:bg-white/5 hover:text-white'}`}
+              className={`flex-1 flex min-h-16 flex-col items-center justify-center rounded-2xl px-1 pt-2.5 pb-3 transition-all active:scale-[0.97] ${active ? 'text-white' : 'text-blue-300 hover:bg-white/5 hover:text-white'}`}
             >
               <span className={`grid h-8 w-10 place-items-center rounded-full transition-colors ${active ? 'bg-[#CE1141] text-white shadow-lg shadow-[#CE1141]/25' : 'text-blue-300'}`}>{icons[icon]}</span>
               <span className={`text-[0.7rem] mt-1 font-bold ${active ? 'text-white' : ''}`}>{label}</span>

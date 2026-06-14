@@ -94,9 +94,26 @@ function stripMarkdown(text) {
 
 export async function POST(request) {
   try {
-    const { messages } = await request.json();
+    const { messages, selectedGame } = await request.json();
     const [bravesContext, bravesNews] = await Promise.all([getBravesContext(), getBravesNews()]);
     const today = new Date().toLocaleDateString('en-US', { timeZone: 'America/New_York', weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+    const selectedGameContext = selectedGame?.gameTime && selectedGame?.opponentName
+      ? [
+          'SELECTED APP GAME:',
+          `The Ask screen is referring specifically to the Braves game on ${new Date(selectedGame.gameTime).toLocaleDateString('en-US', {
+            timeZone: 'America/New_York',
+            weekday: 'long',
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
+          })} ${selectedGame.isHome ? 'against' : 'at'} the ${selectedGame.opponentName}.`,
+          `App status: ${selectedGame.status}.`,
+          selectedGame.status === 'Final' || selectedGame.status === 'Live'
+            ? `App score: Braves ${selectedGame.bravesScore}, ${selectedGame.opponentAbbr || selectedGame.opponentName} ${selectedGame.opponentScore}.`
+            : '',
+          'When the user says "this game," "the game," or taps a suggested game question, answer about this selected game. State the date when needed to prevent ambiguity.',
+        ].filter(Boolean).join('\n')
+      : 'SELECTED APP GAME: None.';
     const systemPrompt = [
       'You are Chop Talk, a passionate Atlanta Braves superfan assistant.',
       '',
@@ -110,6 +127,7 @@ export async function POST(request) {
       '',
       'CURRENT BRAVES STATS:',
       bravesContext,
+      selectedGameContext,
       'LATEST BRAVES NEWS:',
       bravesNews,
       '',
@@ -129,6 +147,11 @@ export async function POST(request) {
     return NextResponse.json({ reply });
   } catch (err) {
     console.error('ERROR:', err.message);
+    if (err.message && err.message.toLowerCase().includes('credit balance is too low')) {
+      return NextResponse.json({
+        reply: "Chop Talk's AI answers are temporarily offline, but the game snapshot, standings, radio link, and recap links still work. The answer engine should be back once service credits are refreshed.",
+      });
+    }
     return NextResponse.json({ error: err.message }, { status: 500 });
   }
 }

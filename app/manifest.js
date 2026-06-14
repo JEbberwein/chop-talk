@@ -2,7 +2,7 @@ export default function manifest() {
   return {
     name: "Chop Talk",
     short_name: "Chop Talk",
-    description: "Your Atlanta Braves companion",
+    description: "Your daily Atlanta Braves companion for game context, predictions, roster updates, and fast answers.",
     start_url: "/",
     scope: "/",
     display: "standalone",

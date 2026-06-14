@@ -7,7 +7,7 @@ const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"]
 
 export const metadata = {
   title: "Chop Talk",
-  description: "Your Atlanta Braves companion",
+  description: "Your daily Atlanta Braves companion for game context, predictions, roster updates, and fast answers.",
   manifest: "/manifest.webmanifest",
   appleWebApp: {
     capable: true,

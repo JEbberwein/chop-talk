@@ -20,6 +20,10 @@
 # production
 /build
 
+# Codex workspace artifacts
+/outputs/
+/work/
+
 # misc
 .DS_Store
 *.pem

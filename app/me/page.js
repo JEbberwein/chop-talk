@@ -1,237 +1,235 @@
 'use client';
-import { useState, useCallback, useEffect } from 'react';
+
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import Link from 'next/link';
 
 const BRAVES_ID = 144;
+const STATS_KEY = 'ct_prediction_stats';
 
-const PLAYERS = [
-  'Ronald Acuna Jr.',
-  'Matt Olson',
-  'Austin Riley',
-  'Ozzie Albies',
-  'Michael Harris II',
-  'Sean Murphy',
-  'Chris Sale',
-  'Spencer Strider',
-  'Reynaldo Lopez',
-  'AJ Smith-Shawver',
-  'Jarred Kelenic',
-  'Ramon Laureano',
-];
-
-function comparableName(name) {
+function comparableName(name = '') {
   return name.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
 }
 
-export default function Me() {
+function emptyPredictionStats() {
+  return { points: 0, correct: 0, total: 0, games: 0, history: [] };
+}
+
+function readPredictionStats() {
+  try {
+    return JSON.parse(localStorage.getItem(STATS_KEY) || '') || emptyPredictionStats();
+  } catch {
+    return emptyPredictionStats();
+  }
+}
+
+export default function MyBraves() {
   const [name, setName] = useState('');
   const [editingName, setEditingName] = useState(false);
   const [tempName, setTempName] = useState('');
-  const [streak, setStreak] = useState(0);
   const [favPlayer, setFavPlayer] = useState('');
+  const [players, setPlayers] = useState([]);
+  const [injuries, setInjuries] = useState([]);
   const [playerStats, setPlayerStats] = useState(null);
   const [loadingStats, setLoadingStats] = useState(false);
+  const [predictionStats, setPredictionStats] = useState(emptyPredictionStats);
 
   const fetchPlayerStats = useCallback(async (playerName) => {
+    if (!playerName) return;
     setLoadingStats(true);
     setPlayerStats(null);
 
     try {
-      const season = 2026;
       const base = 'https://statsapi.mlb.com/api/v1';
-      const hittingRes = await fetch(base + '/stats?stats=season&group=hitting&season=' + season + '&teamId=' + BRAVES_ID + '&sportId=1&limit=40');
-      const hittingData = await hittingRes.json();
+      const [hittingRes, pitchingRes] = await Promise.all([
+        fetch(`${base}/stats?stats=season&group=hitting&season=2026&teamId=${BRAVES_ID}&sportId=1&limit=50`),
+        fetch(`${base}/stats?stats=season&group=pitching&season=2026&teamId=${BRAVES_ID}&sportId=1&limit=40`),
+      ]);
+      const [hittingData, pitchingData] = await Promise.all([hittingRes.json(), pitchingRes.json()]);
+      const hitting = hittingData.stats?.[0]?.splits?.find(
+        (entry) => comparableName(entry.player.fullName) === comparableName(playerName)
+      );
+      const pitching = pitchingData.stats?.[0]?.splits?.find(
+        (entry) => comparableName(entry.player.fullName) === comparableName(playerName)
+      );
 
-      if (hittingData.stats && hittingData.stats[0] && hittingData.stats[0].splits) {
-        const found = hittingData.stats[0].splits.find((p) => comparableName(p.player.fullName) === comparableName(playerName));
-        if (found) {
-          setPlayerStats({ type: 'hitting', stat: found.stat, name: found.player.fullName });
-          setLoadingStats(false);
-          return;
-        }
-      }
-
-      const pitchingRes = await fetch(base + '/stats?stats=season&group=pitching&season=' + season + '&teamId=' + BRAVES_ID + '&sportId=1&limit=20');
-      const pitchingData = await pitchingRes.json();
-
-      if (pitchingData.stats && pitchingData.stats[0] && pitchingData.stats[0].splits) {
-        const found = pitchingData.stats[0].splits.find((p) => comparableName(p.player.fullName) === comparableName(playerName));
-        if (found) {
-          setPlayerStats({ type: 'pitching', stat: found.stat, name: found.player.fullName });
-          setLoadingStats(false);
-          return;
-        }
-      }
-
-      setPlayerStats(null);
+      if (hitting) setPlayerStats({ type: 'hitting', stat: hitting.stat, name: hitting.player.fullName });
+      else if (pitching) setPlayerStats({ type: 'pitching', stat: pitching.stat, name: pitching.player.fullName });
     } catch {
       setPlayerStats(null);
+    } finally {
+      setLoadingStats(false);
     }
-
-    setLoadingStats(false);
   }, []);
 
   useEffect(() => {
-    const savedName = localStorage.getItem('ct_name') || '';
-    const savedStreak = parseInt(localStorage.getItem('ct_streak') || '0');
-    const savedPlayer = localStorage.getItem('ct_fav_player') || '';
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setName(savedName);
-    setStreak(savedStreak);
-    setFavPlayer(savedPlayer);
-    if (!savedName) setEditingName(true);
+    const load = async () => {
+      const savedName = localStorage.getItem('ct_name') || '';
+      const savedPlayer = localStorage.getItem('ct_fav_player') || '';
+      setName(savedName);
+      setTempName(savedName);
+      setEditingName(!savedName);
+      setFavPlayer(savedPlayer);
+      setPredictionStats(readPredictionStats());
+
+      try {
+        const [gameRes, injuryRes] = await Promise.all([fetch('/api/game'), fetch('/api/injuries')]);
+        const [gameData, injuryData] = await Promise.all([gameRes.json(), injuryRes.json()]);
+        const combined = [
+          ...(gameData.activePlayers || []).map((player) => player.name),
+          ...(injuryData.injuries || []).map((player) => player.name),
+        ];
+        setPlayers([...new Set(combined)].sort());
+        setInjuries(injuryData.injuries || []);
+      } catch {
+        setPlayers(savedPlayer ? [savedPlayer] : []);
+      }
+    };
+    const timer = setTimeout(load, 0);
+    return () => clearTimeout(timer);
   }, []);
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    if (favPlayer) fetchPlayerStats(favPlayer);
+    if (!favPlayer) return;
+    const timer = setTimeout(() => fetchPlayerStats(favPlayer), 0);
+    return () => clearTimeout(timer);
   }, [favPlayer, fetchPlayerStats]);
 
+  const favoriteInjury = useMemo(
+    () => injuries.find((player) => comparableName(player.name) === comparableName(favPlayer)),
+    [favPlayer, injuries]
+  );
+  const accuracy = predictionStats.total
+    ? Math.round((predictionStats.correct / predictionStats.total) * 100)
+    : 0;
+
   const saveName = () => {
-    const n = tempName.trim();
-    if (!n) return;
-    setName(n);
-    localStorage.setItem('ct_name', n);
+    const nextName = tempName.trim();
+    if (!nextName) return;
+    setName(nextName);
+    localStorage.setItem('ct_name', nextName);
     setEditingName(false);
   };
 
-  const selectPlayer = (p) => {
-    setFavPlayer(p);
-    localStorage.setItem('ct_fav_player', p);
+  const selectPlayer = (event) => {
+    const player = event.target.value;
+    setFavPlayer(player);
+    localStorage.setItem('ct_fav_player', player);
   };
 
   return (
-    <div className="min-h-[calc(100dvh-6rem)] bg-[#071b34] px-4 py-6 sm:py-8">
+    <div className="min-h-[calc(100dvh-6rem)] bg-[#071b34] px-4 py-6">
       <div className="mx-auto max-w-md space-y-4">
-        <header className="rounded-[1.5rem] border border-white/10 bg-[#0b284d] p-5 shadow-2xl shadow-black/20">
-          <p className="text-xs font-bold uppercase tracking-[0.22em] text-blue-200">Profile</p>
-          <h1 className="mt-2 text-3xl font-black tracking-tight text-white">{name ? `Hey, ${name}` : 'Make it yours'}</h1>
-          <p className="mt-2 text-sm leading-6 text-blue-100">
-            Save your fan name, choose a favorite Brave, and track the quiz streak that lives on this browser.
-          </p>
+        <header className="rounded-[1.5rem] border border-white/10 bg-[linear-gradient(145deg,#123663,#0b284d)] p-6 shadow-2xl shadow-black/20">
+          <p className="text-xs font-black uppercase tracking-[0.22em] text-blue-200">My Braves</p>
+          <h1 className="mt-2 text-3xl font-black tracking-tight text-white">{name ? `${name}'s fan dashboard` : 'Make Chop Talk yours'}</h1>
+          <p className="mt-2 text-sm leading-6 text-blue-100">Your favorite Brave, GameDay record, and the updates you care about most.</p>
         </header>
 
-        <section className="rounded-[1.25rem] border border-blue-800/80 bg-[#102b50] p-5 shadow-xl shadow-black/10">
+        <section className="rounded-[1.25rem] border border-blue-800 bg-[#102b50] p-5">
           {editingName ? (
-            <div>
-              <p className="mb-2 text-xs font-bold uppercase tracking-[0.2em] text-blue-300">First step</p>
-              <h2 className="text-xl font-black text-white">What should we call you?</h2>
-              <p className="mt-1 text-sm text-blue-200">This only saves on this browser for now.</p>
-              <div className="flex gap-2">
+            <>
+              <p className="text-xs font-black uppercase tracking-[0.2em] text-blue-300">Fan name</p>
+              <div className="mt-3 flex gap-2">
                 <input
-                  type="text"
                   value={tempName}
-                  onChange={(e) => setTempName(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && saveName()}
-                  placeholder="Enter your name..."
-                  aria-label="Fan name"
-                  className="mt-4 min-h-11 flex-1 min-w-0 rounded-2xl border border-blue-800 bg-[#071b34] px-4 text-sm text-white outline-none placeholder:text-blue-300/70"
-                  autoFocus
+                  onChange={(event) => setTempName(event.target.value)}
+                  onKeyDown={(event) => event.key === 'Enter' && saveName()}
+                  placeholder="What should we call you?"
+                  className="min-h-12 min-w-0 flex-1 rounded-2xl border border-blue-700 bg-[#071b34] px-4 text-sm text-white outline-none placeholder:text-blue-400"
                 />
-                <button onClick={saveName} disabled={!tempName.trim()} className="mt-4 min-h-11 rounded-2xl bg-[#CE1141] px-5 py-2.5 text-sm font-black text-white shadow-lg shadow-[#CE1141]/20 transition hover:bg-[#e01b50] active:scale-[0.98] disabled:bg-blue-900 disabled:text-blue-300 disabled:shadow-none">
-                  Save
-                </button>
+                <button onClick={saveName} disabled={!tempName.trim()} className="rounded-2xl bg-[#CE1141] px-5 text-sm font-black text-white disabled:bg-blue-900">Save</button>
               </div>
-            </div>
+            </>
           ) : (
             <div className="flex items-center justify-between gap-4">
-              <div>
-                <p className="mb-1 text-xs font-bold uppercase tracking-[0.2em] text-blue-300">Fan name</p>
-                <p className="text-2xl font-black text-white">{name}</p>
-              </div>
-              <button onClick={() => { setTempName(name); setEditingName(true); }} className="min-h-10 rounded-full border border-blue-700 px-4 py-2 text-xs font-bold text-blue-100 transition hover:border-blue-400 hover:bg-white/5 active:scale-[0.98]">
-                Edit
-              </button>
+              <div><p className="text-xs font-black uppercase tracking-[0.2em] text-blue-300">Fan name</p><p className="mt-1 text-2xl font-black text-white">{name}</p></div>
+              <button onClick={() => setEditingName(true)} className="rounded-full border border-blue-700 px-4 py-2 text-xs font-black text-blue-100">Edit</button>
             </div>
           )}
         </section>
 
-        <section className="rounded-[1.25rem] border border-blue-800/80 bg-[#102b50] p-5 shadow-xl shadow-black/10">
-          <p className="mb-3 text-xs font-bold uppercase tracking-[0.2em] text-blue-300">Quiz streak</p>
-          <div className="flex items-center gap-4">
-            <div className="grid h-12 w-12 place-items-center rounded-full bg-[#CE1141] font-black text-white shadow-lg shadow-[#CE1141]/20">S</div>
+        <section className="rounded-[1.25rem] border border-blue-800 bg-[#102b50] p-5">
+          <div className="flex items-end justify-between gap-4">
             <div>
-              <p className="text-4xl font-black text-white">{streak} <span className="text-lg font-normal text-blue-300">day{streak !== 1 ? 's' : ''}</span></p>
-              <p className="mt-0.5 text-xs text-blue-300">{streak === 0 ? 'Take the quiz to start your streak.' : streak >= 7 ? 'You are on a roll. Keep it going.' : 'Keep coming back daily.'}</p>
+              <p className="text-xs font-black uppercase tracking-[0.2em] text-blue-300">GameDay record</p>
+              <p className="mt-1 text-4xl font-black text-white">{predictionStats.points} <span className="text-base font-bold text-blue-300">points</span></p>
             </div>
+            <Link href="/gameday" className="rounded-full bg-[#CE1141] px-4 py-2 text-xs font-black text-white">Make picks</Link>
           </div>
-          {streak === 0 && (
-            <a href="/quiz" className="mt-5 block min-h-11 rounded-2xl bg-[#CE1141] px-5 py-3 text-center text-sm font-black text-white shadow-lg shadow-[#CE1141]/20 transition hover:bg-[#e01b50] active:scale-[0.98]">
-              Start today&apos;s quiz
-            </a>
-          )}
+          <div className="mt-4 grid grid-cols-3 gap-2 text-center">
+            <div className="rounded-2xl bg-[#071b34] p-3"><p className="text-2xl font-black text-white">{predictionStats.games}</p><p className="text-[0.68rem] font-bold uppercase text-blue-400">Games</p></div>
+            <div className="rounded-2xl bg-[#071b34] p-3"><p className="text-2xl font-black text-white">{accuracy}%</p><p className="text-[0.68rem] font-bold uppercase text-blue-400">Accuracy</p></div>
+            <div className="rounded-2xl bg-[#071b34] p-3"><p className="text-2xl font-black text-white">{predictionStats.correct}</p><p className="text-[0.68rem] font-bold uppercase text-blue-400">Correct</p></div>
+          </div>
         </section>
 
-        <section className="rounded-[1.25rem] border border-blue-800/80 bg-[#102b50] p-5 shadow-xl shadow-black/10">
-          <p className="mb-2 text-xs font-bold uppercase tracking-[0.2em] text-blue-300">Favorite Brave</p>
-          <h2 className="text-xl font-black text-white">Personalize the player card</h2>
-          <p className="mt-1 text-sm text-blue-200">Pick one player to keep a stat snapshot handy.</p>
-          <div className="flex flex-wrap gap-2 mb-4">
-            {PLAYERS.map((p) => (
-              <button key={p} onClick={() => selectPlayer(p)} aria-pressed={favPlayer === p} className={`min-h-10 rounded-full border px-3 py-2 text-xs font-bold transition-all active:scale-[0.98] ${favPlayer === p ? 'border-[#CE1141] bg-[#CE1141] text-white shadow-lg shadow-[#CE1141]/20' : 'border-blue-700 bg-[#071b34] text-blue-100 hover:border-blue-400 hover:bg-[#0d2c53]'}`}>
-                {p}
-              </button>
-            ))}
-          </div>
+        <section className="rounded-[1.25rem] border border-blue-800 bg-[#102b50] p-5">
+          <p className="text-xs font-black uppercase tracking-[0.2em] text-blue-300">Favorite Brave</p>
+          <h2 className="mt-1 text-xl font-black text-white">Your player card</h2>
+          <select value={favPlayer} onChange={selectPlayer} className="mt-4 min-h-12 w-full rounded-2xl border border-blue-700 bg-[#071b34] px-4 text-sm font-bold text-white outline-none">
+            <option value="">Choose a player...</option>
+            {players.map((player) => <option key={player} value={player}>{player}</option>)}
+          </select>
 
-          {!favPlayer && (
-            <div className="rounded-2xl border border-dashed border-blue-700 bg-[#071b34] p-4 text-center">
-              <p className="text-sm font-bold text-white">No favorite selected yet</p>
-              <p className="mt-1 text-xs leading-5 text-blue-300">Choose a player above and this space becomes your quick stat card.</p>
+          {favoriteInjury && (
+            <div className="mt-4 rounded-2xl border border-[#CE1141]/60 bg-[#CE1141]/10 p-4">
+              <div className="flex items-center justify-between gap-3">
+                <p className="text-sm font-black text-white">Currently on Roster Watch</p>
+                <span className="rounded-full bg-[#CE1141] px-3 py-1 text-xs font-black text-white">{favoriteInjury.expectedReturn}</span>
+              </div>
+              <p className="mt-2 text-sm leading-6 text-blue-100">{favoriteInjury.injury}. {favoriteInjury.status}</p>
+              <Link href="/roster" className="mt-3 inline-block text-xs font-black text-blue-200 underline underline-offset-4">View full update</Link>
             </div>
           )}
 
           {favPlayer && (
-            <div className="rounded-2xl border border-blue-800 bg-[#071b34] p-4">
+            <div className="mt-4 rounded-2xl bg-[#071b34] p-4">
               {loadingStats ? (
-                <p className="text-center text-sm text-blue-300" role="status">Loading stats...</p>
+                <p className="text-center text-sm font-bold text-blue-300">Loading 2026 stats...</p>
               ) : playerStats ? (
-                <div>
-                  <p className="mb-3 text-sm font-black text-white">{playerStats.name} - 2026 Stats</p>
-                  {playerStats.type === 'hitting' ? (
-                    <div className="grid grid-cols-4 gap-2 text-center">
-                      {[
-                        ['AVG', playerStats.stat.avg || '.000'],
-                        ['HR', playerStats.stat.homeRuns || 0],
-                        ['RBI', playerStats.stat.rbi || 0],
-                        ['OPS', playerStats.stat.ops || '.000'],
-                      ].map(([label, val]) => (
-                        <div key={label} className="rounded-xl bg-[#102b50] p-2">
-                          <p className="text-lg font-black text-white">{val}</p>
-                          <p className="text-xs text-blue-300">{label}</p>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="grid grid-cols-4 gap-2 text-center">
-                      {[
-                        ['ERA', playerStats.stat.era || '-.--'],
-                        ['W-L', (playerStats.stat.wins || 0) + '-' + (playerStats.stat.losses || 0)],
-                        ['WHIP', playerStats.stat.whip || '-.--'],
-                        ['K', playerStats.stat.strikeOuts || 0],
-                      ].map(([label, val]) => (
-                        <div key={label} className="rounded-xl bg-[#102b50] p-2">
-                          <p className="text-lg font-black text-white">{val}</p>
-                          <p className="text-xs text-blue-300">{label}</p>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
+                <>
+                  <p className="mb-3 text-sm font-black text-white">{playerStats.name} · 2026</p>
+                  <div className="grid grid-cols-4 gap-2 text-center">
+                    {(playerStats.type === 'hitting'
+                      ? [['AVG', playerStats.stat.avg || '.000'], ['HR', playerStats.stat.homeRuns || 0], ['RBI', playerStats.stat.rbi || 0], ['OPS', playerStats.stat.ops || '.000']]
+                      : [['ERA', playerStats.stat.era || '-.--'], ['W-L', `${playerStats.stat.wins || 0}-${playerStats.stat.losses || 0}`], ['WHIP', playerStats.stat.whip || '-.--'], ['K', playerStats.stat.strikeOuts || 0]]
+                    ).map(([label, value]) => (
+                      <div key={label} className="rounded-xl bg-[#102b50] p-2"><p className="text-lg font-black text-white">{value}</p><p className="text-[0.68rem] font-bold text-blue-400">{label}</p></div>
+                    ))}
+                  </div>
+                </>
               ) : (
-                <p className="text-center text-sm leading-6 text-blue-300">
-                  No 2026 stat line found yet. This can happen before a player appears in a game or when roster data changes.
-                </p>
+                <p className="text-center text-sm leading-6 text-blue-300">No current 2026 stat line is available for this player.</p>
               )}
             </div>
           )}
         </section>
 
-        <section className="rounded-[1.25rem] border border-blue-800/80 bg-[#102b50] p-5 shadow-xl shadow-black/10">
-          <p className="mb-3 text-xs font-bold uppercase tracking-[0.2em] text-blue-300">About</p>
-          <p className="text-sm font-black text-white">Chop Talk</p>
-          <p className="mt-1 text-xs leading-5 text-blue-300">Your Atlanta Braves companion for live scores, Q&A, daily trivia, and standings.</p>
-          <p className="mt-3 text-xs text-blue-500">Version 1.0</p>
+        <section className="rounded-[1.25rem] border border-blue-800 bg-[#102b50] p-5">
+          <div className="flex items-center justify-between">
+            <div><p className="text-xs font-black uppercase tracking-[0.2em] text-blue-300">Recent picks</p><h2 className="mt-1 text-xl font-black text-white">Your GameDay history</h2></div>
+          </div>
+          {predictionStats.history?.length ? (
+            <div className="mt-4 space-y-2">
+              {predictionStats.history.slice(0, 5).map((entry) => (
+                <div key={entry.gamePk} className="flex items-center justify-between rounded-2xl bg-[#071b34] p-4">
+                  <div><p className="text-sm font-black text-white">vs. {entry.opponent}</p><p className="mt-1 text-xs text-blue-400">{entry.score} · {new Date(entry.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</p></div>
+                  <div className="grid h-11 w-11 place-items-center rounded-full bg-[#CE1141] text-lg font-black text-white">{entry.points}/3</div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="mt-4 rounded-2xl border border-dashed border-blue-700 bg-[#071b34] p-5 text-center">
+              <p className="text-sm font-black text-white">Your first prediction card is waiting</p>
+              <p className="mt-1 text-xs leading-5 text-blue-300">Make picks before first pitch and the result will appear here after the game.</p>
+            </div>
+          )}
         </section>
+
+        <Link href="/roster" className="block rounded-[1.25rem] border border-blue-700 bg-[#102b50] p-5">
+          <p className="text-xs font-black uppercase tracking-[0.2em] text-blue-300">Roster Watch</p>
+          <p className="mt-1 text-lg font-black text-white">See every injury and expected return</p>
+        </Link>
       </div>
     </div>
   );
